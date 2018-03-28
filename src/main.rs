@@ -1,4 +1,3 @@
-// TODO: Fix libpnet
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -55,9 +54,8 @@ fn main() {
         })
         .collect();
 
-    let ipv6: Ipv6Addr = ips[0];
+    let ipv6: Ipv6Addr = ips[0]; // first one use
     debug!("{:?}", ipv6);
-    debug!("{:?}", ips);
 
     let ip_src = if let Some(sip) = args.value_of("src-ip") {
         Ipv6Addr::from_str(sip).unwrap()
@@ -72,7 +70,6 @@ fn main() {
     // create ipv6 packet, L3
     let ipv6 = build_ipv6_of_rt_advt(ip_src, ip_dst, rt_advt.packet());
 
-    // TODO: can get mac addr via interface
     let src_mac = if args.is_present("src-mac") {
         MacAddr::from_str(args.value_of("src-mac").unwrap()).unwrap()
     } else {
@@ -82,7 +79,6 @@ fn main() {
     // L2 ether
     let ether = build_ether_packet(
         src_mac,
-        // MacAddr::from_str("08:00:27:d1:fc:38").unwrap(),
         MacAddr::from_str("ff:ff:ff:ff:ff:ff").unwrap(),
         EtherType::new(0x86dd),
         ipv6.packet(),
