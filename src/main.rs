@@ -6,18 +6,17 @@ extern crate env_logger;
 extern crate pnet;
 extern crate ra;
 use clap::App;
-use std::net::Ipv6Addr;
-use std::str::FromStr;
-use std::net::IpAddr;
-use pnet::datalink::MacAddr;
 use pnet::datalink::Channel::Ethernet;
+use pnet::datalink::MacAddr;
 use pnet::packet::ethernet::EtherType;
 use pnet::packet::Packet;
+use std::net::IpAddr;
+use std::net::Ipv6Addr;
+use std::str::FromStr;
 
 use ra::packet_builder::*;
 use ra::packet_config::*;
 use ra::packet_sender::*;
-
 
 fn main() {
     env_logger::init();
@@ -45,7 +44,8 @@ fn main() {
     debug!("{:?}", interface.ips);
     debug!("{:?}", interface.ips[1]);
     let ips = interface.ips.clone();
-    let ips: Vec<Ipv6Addr> = ips.iter()
+    let ips: Vec<Ipv6Addr> = ips
+        .iter()
         .map(|ip| ip.ip())
         .filter(|ip| ip.is_ipv6())
         .map(|ipv6| match ipv6 {

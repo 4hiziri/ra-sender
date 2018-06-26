@@ -1,17 +1,17 @@
 extern crate pnet;
-use std::net::Ipv6Addr;
-use pnet::datalink::{self, NetworkInterface, MacAddr};
-use pnet::packet::ethernet::{MutableEthernetPacket, EtherType};
-use pnet::packet::Packet;
-use pnet::packet::ipv6::MutableIpv6Packet;
+use pnet::datalink::{self, MacAddr, NetworkInterface};
+use pnet::packet::ethernet::{EtherType, MutableEthernetPacket};
 use pnet::packet::icmpv6;
-use pnet::packet::FromPacket;
 use pnet::packet::icmpv6::ndp;
-use pnet::packet::icmpv6::Icmpv6Packet;
-use pnet::packet::icmpv6::ndp::{MutableRouterAdvertPacket, MutableNdpOptionPacket};
 use pnet::packet::icmpv6::ndp::NdpOption;
+use pnet::packet::icmpv6::ndp::{MutableNdpOptionPacket, MutableRouterAdvertPacket};
+use pnet::packet::icmpv6::Icmpv6Packet;
+use pnet::packet::ipv6::MutableIpv6Packet;
+use pnet::packet::FromPacket;
+use pnet::packet::Packet;
 use pnet::util::Octets;
 use std::iter::FromIterator;
+use std::net::Ipv6Addr;
 
 /// Return IPv6 NDP option source link address
 /// #Arguments
@@ -186,8 +186,8 @@ pub fn build_router_advert<'a>(
     let advt_packet = Vec::from_iter(rt_advt.packet().to_owned());
     rt_advt.set_checksum(icmpv6::checksum(
         &convert_rtadvt_icmpv6(advt_packet.as_slice()),
-        source,
-        destination,
+        &source,
+        &destination,
     ));
 
     rt_advt
