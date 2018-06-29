@@ -32,9 +32,12 @@ fn main() {
 
     let args = app.get_matches();
 
+    // parse parameters
+
     let interface_name = args.value_of("INTERFACE").unwrap();
     let interface = get_interface(&interface_name);
 
+    // TODO: need arp function
     // Create a new channel, dealing with layer 2 packets
     let mut tx: Box<DataLinkSender> = match get_connection(&interface) {
         Ethernet(tx, _) => tx,
