@@ -7,7 +7,7 @@ extern crate pnet;
 extern crate ra;
 use clap::App;
 use pnet::datalink::Channel::Ethernet;
-use pnet::datalink::MacAddr;
+use pnet::datalink::{DataLinkSender, MacAddr};
 use pnet::packet::ethernet::EtherType;
 use pnet::packet::Packet;
 use std::net::IpAddr;
@@ -34,7 +34,7 @@ fn main() {
     let interface = get_interface(&interface_name);
 
     // Create a new channel, dealing with layer 2 packets
-    let mut tx = match get_connection(&interface) {
+    let mut tx: Box<DataLinkSender> = match get_connection(&interface) {
         Ethernet(tx, _) => tx,
         _ => panic!("get_connection: failed to get connection"),
     };
@@ -63,7 +63,7 @@ fn main() {
         // TODO: get interface's IP address
         Ipv6Addr::from_str("::1").unwrap()
     };
-    let ip_dst = Ipv6Addr::from_str(args.value_of("DST-IP").unwrap()).unwrap();
+    let ip_dst = Ipv6Addr::from_str(args.value_of("DST-IP").unwrap_or("ff02::1")).unwrap();
 
     let rt_advt = set_router_advt(ip_src, ip_dst, &args);
 
@@ -84,7 +84,20 @@ fn main() {
         ipv6.packet(),
     );
 
-    tx.send_to(ether.packet(), Some(interface))
-        .unwrap()
+    let count = args
+        .value_of("count")
+        .unwrap_or("1")
+        .parse::<usize>()
         .unwrap();
+
+    let interval = args
+        .value_of("interval")
+        .unwrap_or("1")
+        .parse::<u32>()
+        .unwrap();
+
+    let packet = ether.packet();
+    for _ in 0..count {
+        tx.send_to(&packet, None).unwrap().unwrap();
+    }
 }
