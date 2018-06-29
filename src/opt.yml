@@ -6,11 +6,12 @@ args:
       required: true
   - DST-IP:
       help: destination IP address
-      index: 2
-      required: true
+      long: dst-ip
+      takes_value: true
   - src-ip:
       help: source IP address
-      index: 3
+      long: src-ip
+      takes_value: true
   - dst-mac:
       help: destination MAC address. default value is broadcast
       long: dst-mac
@@ -96,3 +97,13 @@ args:
       long: prefix-prefer
       takes_value: true
       requires: prefix
+  - count:
+      help: num of RA
+      long: count
+      short: c
+      takes_value: true
+  - interval:
+      help: interval between sending RA
+      long: interval
+      short: i
+      takes_value: true
