@@ -13,6 +13,8 @@ use pnet::packet::Packet;
 use std::net::IpAddr;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
+use std::thread;
+use std::time;
 
 use ra::packet_builder::*;
 use ra::packet_config::*;
@@ -39,30 +41,27 @@ fn main() {
         _ => panic!("get_connection: failed to get connection"),
     };
 
-    // can get Ipv4/6 address and netmask info
-    // which one use?
-    debug!("{:?}", interface.ips);
-    debug!("{:?}", interface.ips[1]);
-    let ips = interface.ips.clone();
-    let ips: Vec<Ipv6Addr> = ips
-        .iter()
-        .map(|ip| ip.ip())
-        .filter(|ip| ip.is_ipv6())
-        .map(|ipv6| match ipv6 {
-            IpAddr::V6(addr) => addr,
-            _ => panic!("can't get ipv6 address: {:?}", ipv6),
-        })
-        .collect();
-
-    let ipv6: Ipv6Addr = ips[0]; // first one use
-    debug!("{:?}", ipv6);
-
     let ip_src = if let Some(sip) = args.value_of("src-ip") {
         Ipv6Addr::from_str(sip).unwrap()
     } else {
-        // TODO: get interface's IP address
-        Ipv6Addr::from_str("::1").unwrap()
+        // TODO: need a test when a system has multiple v6 addr
+        debug!("ips = {:?}", interface.ips);
+        let ips: Vec<Ipv6Addr> = interface
+            .ips
+            .iter()
+            .map(|ip| ip.ip())
+            .filter(|ip| ip.is_ipv6())
+            .map(|ipv6| match ipv6 {
+                IpAddr::V6(addr) => addr,
+                _ => panic!("can't get ipv6 address: {:?}", ipv6), // TODO: convert ipv4 to ipv6
+            })
+            .filter(|ip| !ip.is_loopback()) // TODO: use link_local, but nightly
+            .collect();
+
+        debug!("{:?}", ips[0]);
+        ips[0]
     };
+
     let ip_dst = Ipv6Addr::from_str(args.value_of("DST-IP").unwrap_or("ff02::1")).unwrap();
 
     let rt_advt = set_router_advt(ip_src, ip_dst, &args);
@@ -93,11 +92,12 @@ fn main() {
     let interval = args
         .value_of("interval")
         .unwrap_or("1")
-        .parse::<u32>()
+        .parse::<u64>()
         .unwrap();
 
     let packet = ether.packet();
     for _ in 0..count {
         tx.send_to(&packet, None).unwrap().unwrap();
+        thread::sleep(time::Duration::from_secs(interval));
     }
 }
