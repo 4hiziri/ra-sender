@@ -5,9 +5,10 @@ extern crate log;
 extern crate env_logger;
 extern crate pnet;
 extern crate ra;
-use clap::App;
+use clap::{App, ArgMatches};
+use pnet::datalink;
 use pnet::datalink::Channel::Ethernet;
-use pnet::datalink::{DataLinkSender, MacAddr};
+use pnet::datalink::{DataLinkSender, MacAddr, NetworkInterface};
 use pnet::packet::ethernet::EtherType;
 use pnet::packet::Packet;
 use std::net::IpAddr;
@@ -34,11 +35,68 @@ fn main() {
 
     // set upper layer first
     // parse parameters
+    let interface = get_interface(&args);
+    let ip_src = get_src_ip(&args);
+    let ip_dst = get_dst_ip(&args);
 
-    let interface_name = args.value_of("INTERFACE").unwrap();
-    let interface = get_interface(&interface_name);
+    // router advertisement, L4
+    let rt_advt = set_router_advt(ip_src, ip_dst, &args);
 
-    let ip_src = if let Some(sip) = args.value_of("src-ip") {
+    // create ipv6 packet, L3
+    let ipv6 = build_ipv6_of_rt_advt(ip_src, ip_dst, rt_advt.packet());
+
+    // TODO: need arp function
+    // Create a new channel, dealing with layer 2 packets
+    let mut tx: Box<DataLinkSender> = match get_connection(&interface) {
+        Ethernet(tx, _) => tx,
+        _ => panic!("get_connection: failed to get connection"),
+    };
+
+    // create ether, L2
+    let src_mac = get_src_mac(&args);
+    let dst_mac = get_dst_mac(&args);
+
+    // L2 ether
+    let ether = build_ether_packet(src_mac, dst_mac, EtherType::new(0x86dd), ipv6.packet());
+
+    let count = args
+        .value_of("count")
+        .unwrap_or("1")
+        .parse::<usize>()
+        .unwrap();
+
+    let interval = args
+        .value_of("interval")
+        .unwrap_or("1")
+        .parse::<u64>()
+        .unwrap();
+
+    let packet = ether.packet();
+
+    for _ in 0..count {
+        tx.send_to(&packet, None).unwrap().unwrap();
+        thread::sleep(time::Duration::from_secs(interval));
+    }
+}
+
+/// Find the network interface with the provided name
+///
+/// #Arguments
+/// `interface_name` - interface name. exp.) enp1s0, wlan1
+fn get_interface(args: &ArgMatches) -> NetworkInterface {
+    let interface_name: &str = args.value_of("INTERFACE").unwrap();
+
+    datalink::interfaces()
+        .into_iter()
+        .filter(|iface: &NetworkInterface| iface.name == interface_name)
+        .next()
+        .unwrap()
+}
+
+fn get_src_ip(args: &ArgMatches) -> Ipv6Addr {
+    let interface = get_interface(args);
+
+    if let Some(sip) = args.value_of("src-ip") {
         Ipv6Addr::from_str(sip).unwrap()
     } else {
         // TODO: need a test when a system has multiple v6 addr
@@ -57,52 +115,25 @@ fn main() {
             .collect();
 
         ips[0]
-    };
+    }
+}
 
-    let ip_dst = Ipv6Addr::from_str(args.value_of("DST-IP").unwrap_or("ff02::1")).unwrap();
+fn get_dst_ip(args: &ArgMatches) -> Ipv6Addr {
+    Ipv6Addr::from_str(args.value_of("DST-IP").unwrap_or("ff02::1")).unwrap()
+}
 
-    // router advertisement, L4
-    let rt_advt = set_router_advt(ip_src, ip_dst, &args);
-    // create ipv6 packet, L3
-    let ipv6 = build_ipv6_of_rt_advt(ip_src, ip_dst, rt_advt.packet());
-
-    // TODO: need arp function
-    // Create a new channel, dealing with layer 2 packets
-    let mut tx: Box<DataLinkSender> = match get_connection(&interface) {
-        Ethernet(tx, _) => tx,
-        _ => panic!("get_connection: failed to get connection"),
-    };
-
-    // create ether, L2
-    let src_mac = if args.is_present("src-mac") {
+fn get_src_mac(args: &ArgMatches) -> MacAddr {
+    if args.is_present("src-mac") {
         MacAddr::from_str(args.value_of("src-mac").unwrap()).unwrap()
     } else {
-        interface.mac_address()
-    };
+        get_interface(&args).mac_address()
+    }
+}
 
-    // L2 ether
-    let ether = build_ether_packet(
-        src_mac,
-        MacAddr::from_str("ff:ff:ff:ff:ff:ff").unwrap(),
-        EtherType::new(0x86dd),
-        ipv6.packet(),
-    );
-
-    let count = args
-        .value_of("count")
-        .unwrap_or("1")
-        .parse::<usize>()
-        .unwrap();
-
-    let interval = args
-        .value_of("interval")
-        .unwrap_or("1")
-        .parse::<u64>()
-        .unwrap();
-
-    let packet = ether.packet();
-    for _ in 0..count {
-        tx.send_to(&packet, None).unwrap().unwrap();
-        thread::sleep(time::Duration::from_secs(interval));
+fn get_dst_mac(args: &ArgMatches) -> MacAddr {
+    if let Some(dst) = args.value_of("dst-mac") {
+        MacAddr::from_str(dst).unwrap()
+    } else {
+        MacAddr::from_str("ff:ff:ff:ff:ff:ff").unwrap()
     }
 }

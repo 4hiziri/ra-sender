@@ -138,18 +138,6 @@ pub fn build_ndpopt_rdnss(lifetime: u32, dns_servers: Vec<Ipv6Addr>) -> NdpOptio
     ndpopt.from_packet()
 }
 
-/// Find the network interface with the provided name
-///
-/// #Arguments
-/// `interface_name` - interface name. exp.) enp1s0, wlan1
-pub fn get_interface(interface_name: &str) -> NetworkInterface {
-    datalink::interfaces()
-        .into_iter()
-        .filter(|iface: &NetworkInterface| iface.name == interface_name)
-        .next()
-        .unwrap()
-}
-
 pub fn build_router_advert<'a>(
     hop_limit: u8,
     flag: u8,
