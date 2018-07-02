@@ -117,13 +117,6 @@ pub fn set_router_advt<'a>(
     };
 
     build_router_advert(
-        hop_limit,
-        flag,
-        lifetime,
-        reachable,
-        retrans,
-        ndp_opts,
-        ip_src,
-        ip_dst,
+        hop_limit, flag, lifetime, reachable, retrans, ndp_opts, ip_src, ip_dst,
     )
 }
