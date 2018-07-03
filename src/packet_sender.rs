@@ -12,7 +12,28 @@ pub fn get_connection(interface: &NetworkInterface) -> Channel {
 }
 
 pub fn get_connectionL2(interface: &NetworkInterface) -> Channel {
-    let config = Config {};
+    let config = Config {
+        write_buffer_size: 4096,
+        read_buffer_size: 4096,
+        read_timeout: None,
+        write_timeout: None,
+        channel_type: datalink::ChannelType::Layer2,
+        bpf_fd_attempts: 1000,
+    };
 
-    datalink::channel(&interface).unwrap()
+    datalink::channel(&interface, config).unwrap()
+}
+
+pub fn get_connectionL3(interface: &NetworkInterface) -> Channel {
+    let ethernet = 1; // ether type of ethernet == 1
+    let config = Config {
+        write_buffer_size: 4096,
+        read_buffer_size: 4096,
+        read_timeout: None,
+        write_timeout: None,
+        channel_type: datalink::ChannelType::Layer3(ethernet),
+        bpf_fd_attempts: 1000,
+    };
+
+    datalink::channel(&interface, config).unwrap()
 }
