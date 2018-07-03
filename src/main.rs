@@ -11,6 +11,7 @@ use pnet::datalink::Channel::Ethernet;
 use pnet::datalink::{DataLinkSender, MacAddr, NetworkInterface};
 use pnet::packet::ethernet::EtherType;
 use pnet::packet::Packet;
+use pnet::transport::TransportSender;
 use std::net::IpAddr;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
@@ -20,6 +21,10 @@ use std::time;
 use ra::packet_builder::*;
 use ra::packet_config::*;
 use ra::packet_sender::*;
+
+enum Sender {
+    L4Sender(TransportSender),
+}
 
 fn main() {
     env_logger::init();

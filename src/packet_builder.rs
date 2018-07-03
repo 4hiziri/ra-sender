@@ -1,5 +1,5 @@
 extern crate pnet;
-use pnet::datalink::{self, MacAddr, NetworkInterface};
+use pnet::datalink::MacAddr;
 use pnet::packet::ethernet::{EtherType, MutableEthernetPacket};
 use pnet::packet::icmpv6;
 use pnet::packet::icmpv6::ndp;
