@@ -1,7 +1,19 @@
-use pnet::datalink::{self, Channel, Config, NetworkInterface};
+use pnet::datalink::{self, Channel, Config, DataLinkSender, NetworkInterface};
+use pnet::packet::ip::IpNextHeaderProtocols;
+use pnet::transport::{
+    transport_channel, TransportChannelType, TransportProtocol, TransportSender,
+};
+use std::boxed::Box;
+
+pub enum Sender {
+    L2Sender(Box<DataLinkSender>),
+    L3Sender(Box<DataLinkSender>),
+    L4Sender(TransportSender),
+}
 
 // TODO: set Config.channel_type = Layer3
 pub fn get_connection(interface: &NetworkInterface) -> Channel {
+    // datalink::channel(&interface, Default::default()).map_err();
     match datalink::channel(&interface, Default::default()) {
         Ok(ether) => ether,
         Err(e) => panic!(
@@ -11,7 +23,8 @@ pub fn get_connection(interface: &NetworkInterface) -> Channel {
     }
 }
 
-pub fn get_connectionL2(interface: &NetworkInterface) -> Channel {
+// send just bytes
+pub fn get_connection_layer2(interface: &NetworkInterface) -> Sender {
     let config = Config {
         write_buffer_size: 4096,
         read_buffer_size: 4096,
@@ -21,10 +34,16 @@ pub fn get_connectionL2(interface: &NetworkInterface) -> Channel {
         bpf_fd_attempts: 1000,
     };
 
-    datalink::channel(&interface, config).unwrap()
+    let tx = match datalink::channel(&interface, config).unwrap() {
+        Channel::Ethernet(tx, _) => tx,
+        _ => panic!("Cannot get layer2 channel"), // to option?
+    };
+
+    Sender::L2Sender(tx)
 }
 
-pub fn get_connectionL3(interface: &NetworkInterface) -> Channel {
+// need make Ip header
+pub fn get_connection_layer3(interface: &NetworkInterface) -> Sender {
     let ethernet = 1; // ether type of ethernet == 1
     let config = Config {
         write_buffer_size: 4096,
@@ -35,5 +54,20 @@ pub fn get_connectionL3(interface: &NetworkInterface) -> Channel {
         bpf_fd_attempts: 1000,
     };
 
-    datalink::channel(&interface, config).unwrap()
+    let tx = match datalink::channel(&interface, config).unwrap() {
+        Channel::Ethernet(tx, _) => tx,
+        _ => panic!("Cannot get layer3 channel"), // to option?
+    };
+
+    Sender::L3Sender(tx)
+}
+
+// need destination addr, set Packet
+pub fn get_connection_layer4() -> Sender {
+    let channel = transport_channel(
+        4096,
+        TransportChannelType::Layer4(TransportProtocol::Ipv6(IpNextHeaderProtocols::Icmpv6)),
+    );
+
+    Sender::L4Sender(channel.unwrap().0)
 }
