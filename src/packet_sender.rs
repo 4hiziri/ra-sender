@@ -44,7 +44,8 @@ pub fn get_connection_layer2(interface: &NetworkInterface) -> Sender {
 
 // need make Ip header
 pub fn get_connection_layer3(interface: &NetworkInterface) -> Sender {
-    let ethernet = 1; // ether type of ethernet == 1
+    let ethernet = 0x800; // ether type of ethernet == 1
+
     let config = Config {
         write_buffer_size: 4096,
         read_buffer_size: 4096,
