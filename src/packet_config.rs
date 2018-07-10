@@ -75,7 +75,7 @@ pub fn set_rdnss_opt(opts: &mut Vec<ndp::NdpOption>, args: &ArgMatches) {
     }
 }
 
-pub fn set_router_advt<'a>(
+pub fn get_router_advt<'a>(
     ip_src: Ipv6Addr,
     ip_dst: Ipv6Addr,
     args: &ArgMatches,
