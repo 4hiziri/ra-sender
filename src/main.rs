@@ -99,18 +99,18 @@ fn main() {
 ///
 /// #Arguments
 /// `interface_name` - interface name. exp.) enp1s0, wlan1
-fn get_interface(args: &ArgMatches) -> NetworkInterface {
-    let interface_name: &str = args.value_of("INTERFACE").unwrap();
-
-    datalink::interfaces()
-        .into_iter()
-        .filter(|iface: &NetworkInterface| iface.name == interface_name)
-        .next()
+fn get_interface(args: &ArgMatches) -> Option<NetworkInterface> {
+    args.value_of("INTERFACE")
+        .map(|interface_name| {
+            datalink::interfaces()
+                .into_iter()
+                .filter(|iface: &NetworkInterface| iface.name == interface_name)
+                .next()
+        })
         .unwrap()
 }
 
 fn host_ipv6_addr(interface: &NetworkInterface) -> Option<Ipv6Addr> {
-    // TODO: need a test when a system has multiple v6 addr
     debug!("{:?}", interface.ips);
 
     let ips: Vec<Ipv6Addr> = interface
@@ -120,7 +120,7 @@ fn host_ipv6_addr(interface: &NetworkInterface) -> Option<Ipv6Addr> {
             .filter(|ip| ip.is_ipv6())
             .map(|ipv6| match ipv6 {
                 IpAddr::V6(addr) => addr,
-                _ => panic!("can't get ipv6 address: {:?}", ipv6), // TODO: convert ipv4 to ipv6
+                _ => panic!("can't get ipv6 address: {:?}", ipv6),
             })
             .filter(|ip| !ip.is_loopback()) // TODO: use link_local, but nightly
             .collect();
@@ -135,7 +135,7 @@ fn host_ipv6_addr(interface: &NetworkInterface) -> Option<Ipv6Addr> {
 /// Return source ipv6 address
 /// If src-ip option doesn't exist, this return one of host ipv6 addresses
 fn get_src_ip(args: &ArgMatches) -> Ipv6Addr {
-    let interface = get_interface(args);
+    let interface = get_interface(args).unwrap();
 
     args.value_of("src-ip")
         .map_or(host_ipv6_addr(&interface).unwrap(), |sip| {
@@ -145,7 +145,6 @@ fn get_src_ip(args: &ArgMatches) -> Ipv6Addr {
 
 /// Return destination address
 /// If dst-ip option doesn't exist, this return all node broadcast(?) address.
-/// TODO: fix
 fn get_dst_ip(args: &ArgMatches) -> Ipv6Addr {
     Ipv6Addr::from_str(args.value_of("DST-IP").unwrap_or("ff02::1")).unwrap()
 }
@@ -154,7 +153,7 @@ fn get_dst_ip(args: &ArgMatches) -> Ipv6Addr {
 /// If src-mac option doesn't exist, this return MAC of selected host's interface.
 fn get_src_mac(args: &ArgMatches) -> MacAddr {
     args.value_of("src-mac")
-        .map_or(get_interface(&args).mac_address(), |mac| {
+        .map_or(get_interface(&args).unwrap().mac_address(), |mac| {
             MacAddr::from_str(mac).unwrap()
         })
 }
@@ -165,7 +164,7 @@ fn get_dst_mac(args: &ArgMatches) -> MacAddr {
     MacAddr::from_str(args.value_of("dst-mac").unwrap_or("33:33:00:00:00:01")).unwrap()
 }
 
-// TODO: impl some functions likearp to controll everything
+// TODO: impl some functions like arp to controll everything
 /// If options need layer2 sender, this return true
 fn is_layer2(args: &ArgMatches) -> bool {
     args.is_present("src-mac") || args.is_present("dst-mac")
@@ -183,7 +182,7 @@ fn is_layer4(args: &ArgMatches) -> bool {
 
 /// Return proper sender according to options
 fn get_sender(args: &ArgMatches) -> Sender {
-    let interface = get_interface(&args);
+    let interface = get_interface(&args).unwrap();
 
     if is_layer2(&args) {
         // specify src-mac or dst-mac

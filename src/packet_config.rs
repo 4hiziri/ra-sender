@@ -33,7 +33,6 @@ pub fn set_prefix_opt(opts: &mut Vec<ndp::NdpOption>, args: &ArgMatches) {
     if let Some(prefix) = args.value_of("prefix") {
         let prefix_addr: Ipv6Addr = Ipv6Addr::from_str(prefix).unwrap();
 
-        // TODO: prefix length setting
         let length = match args.value_of("prefix-length") {
             Some(p_len) => p_len.parse::<u8>().unwrap(),
             None => 64,
