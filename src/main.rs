@@ -89,6 +89,8 @@ fn main() {
             let packet = packet.packet();
             debug!("packet dump: {:x?}", packet);
 
+            panic!("This does not work! You should set --src-ip");
+
             for _ in 0..count {
                 let packet = rt_advt.to_immutable();
                 tx.send_to(packet, IpAddr::from(dst_ip)).unwrap();
