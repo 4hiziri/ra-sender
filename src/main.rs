@@ -85,11 +85,6 @@ fn main() {
         }
         Sender::L4Sender(mut tx) => {
             debug!("Use layer4 sender");
-            let packet = rt_advt.to_immutable();
-            let packet = packet.packet();
-            debug!("packet dump: {:x?}", packet);
-
-            panic!("This does not work! You should set --src-ip");
 
             for _ in 0..count {
                 let packet = rt_advt.to_immutable();
