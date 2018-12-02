@@ -5,7 +5,7 @@ use pnet::packet::icmpv6::ndp::MutableRouterAdvertPacket;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
-use packet_builder::*;
+use crate::packet_builder::*;
 
 pub fn set_mtu_opt(opts: &mut Vec<ndp::NdpOption>, args: &ArgMatches) {
     if let Some(mtu_str) = args.value_of("mtu") {

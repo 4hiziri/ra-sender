@@ -61,14 +61,14 @@ pub fn build_ndpopt_prefix(
 
     data.push(prefix_len);
     data.push(flag);
-    data.append(&mut valid_time.octets().iter().cloned().collect());
-    data.append(&mut ref_time.octets().iter().cloned().collect());
+    data.append(&mut valid_time.octets().to_vec());
+    data.append(&mut ref_time.octets().to_vec());
     // reserved field
     data.push(0);
     data.push(0);
     data.push(0);
     data.push(0);
-    data.append(&mut prefix.octets().iter().cloned().collect());
+    data.append(&mut prefix.octets().to_vec());
 
     ndpopt.set_option_type(ndp::NdpOptionTypes::PrefixInformation);
     ndpopt.set_length(LENGTH);
@@ -94,7 +94,7 @@ pub fn build_ndpopt_mtu(mtu: u32) -> NdpOption {
     data.push(0);
     data.push(0);
 
-    data.append(&mut mtu.octets().iter().cloned().collect());
+    data.append(&mut mtu.octets().to_vec());
 
     ndpopt.set_option_type(ndp::NdpOptionTypes::MTU);
     ndpopt.set_length(LENGTH);
@@ -126,11 +126,11 @@ pub fn build_ndpopt_rdnss(lifetime: u32, dns_servers: Vec<Ipv6Addr>) -> NdpOptio
     ndpopt.set_length(length);
 
     // reserved
-    data.append(&mut [0u8; 2].iter().cloned().collect());
-    data.append(&mut lifetime.octets().iter().cloned().collect());
+    data.append(&mut [0u8; 2].to_vec());
+    data.append(&mut lifetime.octets().to_vec());
 
     for server in dns_servers {
-        data.append(&mut server.octets().iter().cloned().collect());
+        data.append(&mut server.octets().to_vec());
     }
 
     ndpopt.set_data(data.as_slice());
@@ -150,15 +150,14 @@ pub fn build_router_advert<'a>(
 ) -> MutableRouterAdvertPacket<'a> {
     let payload_len: usize = ndp_opts
         .as_slice()
-        .into_iter()
+        .iter()
         .map(|opt| opt.length as usize)
         .fold(
             MutableRouterAdvertPacket::minimum_packet_size() as usize,
             |acc, len| acc + len * 8,
         );
 
-    let mut buf = Vec::with_capacity(payload_len);
-    buf.resize(payload_len, 0);
+    let buf = vec![0; payload_len];
     let mut rt_advt = MutableRouterAdvertPacket::owned(buf).unwrap();
     debug!("build_router_advert: advert payload len is {}", payload_len);
 
@@ -188,8 +187,7 @@ pub fn build_ipv6_packet(
     payload: &[u8],
 ) -> MutableIpv6Packet {
     let packet_len = payload.len() + MutableIpv6Packet::minimum_packet_size();
-    let mut buf = Vec::with_capacity(packet_len);
-    buf.resize(packet_len, 0);
+    let buf = vec![0; packet_len];
     let mut ipv6 = MutableIpv6Packet::owned(buf).unwrap();
 
     ipv6.set_version(0x6);

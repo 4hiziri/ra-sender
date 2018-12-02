@@ -2,6 +2,7 @@
 name = "ra"
 version = "0.1.0"
 authors = ["tkgsy <meirvg@gmail.com>"]
+edition='2018'
 
 [dependencies]
 clap = {version = "~2.27.0", features = ["yaml"]}

@@ -104,8 +104,7 @@ fn get_interface(args: &ArgMatches) -> Option<NetworkInterface> {
         .map(|interface_name| {
             datalink::interfaces()
                 .into_iter()
-                .filter(|iface: &NetworkInterface| iface.name == interface_name)
-                .next()
+                .find(|iface: &NetworkInterface| iface.name == interface_name)
         })
         .unwrap()
 }
@@ -114,18 +113,18 @@ fn host_ipv6_addr(interface: &NetworkInterface) -> Option<Ipv6Addr> {
     debug!("{:?}", interface.ips);
 
     let ips: Vec<Ipv6Addr> = interface
-            .ips
-            .iter()
-            .map(|ip| ip.ip())
-            .filter(|ip| ip.is_ipv6())
-            .map(|ipv6| match ipv6 {
-                IpAddr::V6(addr) => addr,
-                _ => panic!("can't get ipv6 address: {:?}", ipv6),
-            })
-            .filter(|ip| !ip.is_loopback()) // TODO: use link_local, but nightly
-            .collect();
+        .ips
+        .iter()
+        .map(|ip| ip.ip())
+        .filter(|ip| ip.is_ipv6())
+        .map(|ipv6| match ipv6 {
+            IpAddr::V6(addr) => addr,
+            _ => panic!("can't get ipv6 address: {:?}", ipv6),
+        })
+        .filter(|ip| !ip.is_loopback()) // TODO: use link_local, but nightly
+        .collect();
 
-    if ips.len() != 0 {
+    if !ips.is_empty() {
         Some(ips[0])
     } else {
         None
